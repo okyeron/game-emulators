@@ -2,6 +2,19 @@
 --
 -- NES Square only implemented so far
 
+-- trig		Control or audio rate trigger.
+-- dutycycle	Type (0-3).
+-- loopenv		Loop envelope off or on (0/1).
+-- envdecay	Envelope decay off or on (0/1).
+-- vol			Volume (0-15).
+-- sweep		Off or on (0/1).
+-- sweeplen	Sweeplength (0-7).
+-- sweepdir	Sweepdirection decrease or increase (0/1).
+-- sweepshi	Sweepshift (0-7).
+-- freq		Frequency (0-2047).
+-- vbl	 		Length counter (0-31).
+
+
 engine.name = "NES"
 
 local freq = math.random(1,1023)
