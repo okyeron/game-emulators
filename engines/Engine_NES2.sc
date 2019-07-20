@@ -1,4 +1,4 @@
-// CroneEngine_NES2
+// CroneEngine_NES2y
 // NES2
 
 // Emulation of the sound generation hardware of the NES APU chip by Matthew Conte. 
@@ -8,143 +8,85 @@
 // http://web.textfiles.com/games/nessound.txt
 // http://nesdev.com/dmc.txt
 
-//
+/*
+trig		Control or audio rate trigger.
+dutycycle	Type (0-3).
+loopenv		Loop envelope off or on (0/1).
+envdecay	Envelope decay off or on (0/1).
+vol			Volume (0-15).
+sweep		Off or on (0/1).
+sweeplen	Sweeplength (0-7).
+sweepdir	Sweepdirection decrease or increase (0/1).
+sweepshi	Sweepshift (0-7).
+freq		Frequency (0-2047).
+vbl	 		Length counter (0-31).
+*/
 
-Engine_NES2 : CroneEngine {
-	var pg;
-    var amp=0.2;
-    var attack=0.1;
-    var sustain=0.5;
-    var release=0.5;
-
-// a = 2 square waves
-    var a0=0; // ## bits 7-6 || duty cycle, ## bit 5 || loop envelope, ## bit 4 || envelope decay disable, ## bits 3-0 || volume / envelope decay rate (4bits 0-15), 
-    var a1=0; // ## bit 7 || sweep on, ## bits 6-4 || sweep length, ## bit 3 || sweep inc/dec, ## bits 2-0 || sweep shifts (3bits 0-7), 
-    var a2=0; // ## bits 7-0 || frequency low bits (8bits 0-255)
-    var a3=0; // ## bits 7-3 || vbl length counter, ## bits 2-0 || frequency high bits (3bits 0-7), 
-
-// b = 2 square waves
-    var b0=0; // ## bits 7-6 || duty cycle, ## bit 5 || loop envelope, ## bit 4 || envelope decay disable, ## bits 3-0 || volume / envelope decay rate (4bits 0-15), 
-    var b1=0; // ## bit 7 || sweep on, ## bits 6-4 || sweep length, ## bit 3 || sweep inc/dec, ## bits 2-0 || sweep shifts (3bits 0-7), 
-    var b2=0; // ## bits 7-0 || frequency low bits (8bits 0-255)
-    var b3=0; // ## bits 7-3 || vbl length counter, ## bits 2-0 || frequency high bits (3bits 0-7)
-
-// c = triangle
-    var c0=0; // ## bit 7 || linear counter start, ## bits 6-0 || linear counter (7bits 0-127)
-    var c2=0; // ## bits 7-0 || frequency low bits (8bits 0-255)
-    var c3=0; // ## bits 7-3 || length counter, ## bits 2-0 || frequency high bits (3bits 0-7)
-
-// d = noise
-    var d0=0; // ## bit 5 || loop envelope, ## bit 4 || envelope decay disable, ## bits 3-0 || volume / envelope decay rate (4bits 0-15), 
-    var d2=0; // ## bit 7 || short mode, ## bits 3-0 || playback sample rate (4bits 0-15), 
-    var d3=0; // ## bits 7-3 || length counter
-    
-// e = delta modulation channel (dmu)
-    var e0=0; // ## bit 7 || irq generator strong::(not in use)::, ## bit 6 || looping, ## bits 3-0 || frequency control (4bits 0-15), 
-    var e1=0; // ## bits 6-0 || delta count register or output dc level strong::(not in use)::
-    var e2=0; // ## bits 7-0 || address load register strong::(not in use)::
-    var e3=0; // ## bits 7-0 || length register strong::(not in use)::
-
-    var smask=0; // ## bit 4 || dmc channel enabled, ## bit 3 || noise channel enabled, ## bit 2 || triangle wave channel enabled, ## bit 1 || square wave channel 2 enabled, ## bit 0 || square wave channel 1 enabled, 
-
-	var rate=1;
+Engine_NES2y : CroneEngine {
+	// Nes2Square.ar(trig: 0, dutycycle: 0, loopenv: 0, envdecay: 0, vol: 10, sweep: 0, sweeplen: 0, sweepdir: 0, sweepshi: 0, freq: 100, vbl: 0)
 	
+	var <synth;
+		
 	*new { arg context, doneCallback;
 		^super.new(context, doneCallback);
 	}
 
 	alloc {
-		pg = ParGroup.tail(context.xg);
+		// Define the synth variable, whichis a function
+		synth = {
+			// define arguments to the function
 
-		SynthDef("NES2", {
-			arg out, a0=a0, a1=a1, a2=a2, a3=a3, b0=b0, b1=b1, b2=b2, b3=b3, c0=c0, c2=c2, c3=c3, d0=d0, d2=d2, d3=d3, e0=e0, e1=e1, e2=e2, e3=e3, smask=smask, amp=1, pan=0;
-			var e, z;
-			e = Env.linen(attackTime: attack, sustainTime: sustain, releaseTime: release, level: amp).kr(2);
-			z = NES2.ar(a0, a1, a2, a3, b0, b1, b2, b3, c0, c2, c3, d0, d2, d3, e0, e1, e2, e3, smask);
-			Out.ar(out, Pan2.ar(z*e, pan));
-		}).add;
+			arg out, gate=0, dutycycle=0, loopenv=0, envdecay=0, vol=10, sweep=0, sweeplen=0, sweepdir=0, sweepshi=0, freq=100, vbl=0, pan=0, amp=1 ;
+			var z;
+			z = Nes2Square.ar(gate, dutycycle, loopenv, envdecay, vol, sweep, sweeplen, sweepdir, sweepshi, freq, vbl);
+			Out.ar(out, Pan2.ar(z, pan));
+			
+		}.play(args: [\out, context.out_b], target: context.xg);
 
-
-		this.addCommand("trig", "", {
-        	Synth("NES2", [\out, context.out_b,
-        	\a0,a0,\a1,a1,\a2,a2,\a3,a3,
-        	\b0,b0,\b1,b1,\b2,b2,\b3,b3,
-        	\c0,c0,\c2,c2,\c3,c3,
-        	\d0,d0,\d2,d2,\d3,d3,
-        	\e0,e0,\e1,e1,\e2,e2,\e3,e3,\smask,smask
-        	], target:pg);
+			
+		// noteOn(freq)
+		this.addCommand("noteOn", "f", { arg msg;
+			synth.set(\freq, msg[1], \gate, 1);
 		});
 
-		this.addCommand("amp", "f", { arg msg;
-			amp = msg[1];
-		});
-		this.addCommand("a0", "f", { arg msg;
-			a0 = msg[1];
-		});
-		this.addCommand("a1", "f", { arg msg;
-			a1 = msg[1];
-		});
-		this.addCommand("a2", "f", { arg msg;
-			a2 = msg[1];
-		});
-		this.addCommand("a3", "f", { arg msg;
-			a3 = msg[1];
-		});
-		this.addCommand("b0", "f", { arg msg;
-			b0 = msg[1];
-		});
-		this.addCommand("b1", "f", { arg msg;
-			b1 = msg[1];
-		});
-		this.addCommand("b2", "f", { arg msg;
-			b2 = msg[1];
-		});
-		this.addCommand("b3", "f", { arg msg;
-			b3 = msg[1];
-		});
-		this.addCommand("c0", "f", { arg msg;
-			c0 = msg[1];
-		});
-		this.addCommand("c2", "f", { arg msg;
-			c2 = msg[1];
-		});
-		this.addCommand("c3", "f", { arg msg;
-			c3 = msg[1];
-		});
-		this.addCommand("d0", "f", { arg msg;
-			d0 = msg[1];
-		});
-		this.addCommand("d2", "f", { arg msg;
-			d2 = msg[1];
-		});
-		this.addCommand("d3", "f", { arg msg;
-			d3 = msg[1];
-		});
-		this.addCommand("e0", "f", { arg msg;
-			e0 = msg[1];
-		});
-		this.addCommand("e1", "f", { arg msg;
-			e1 = msg[1];
-		});
-		this.addCommand("e2", "f", { arg msg;
-			e2 = msg[1];
-		});
-		this.addCommand("e3", "f", { arg msg;
-			e3 = msg[1];
-		});
-		this.addCommand("smask", "f", { arg msg;
-			smask = msg[1];
+		this.addCommand("noteOff", "", { arg msg;
+			synth.set(\gate, 0);
 		});
 
-		this.addCommand("attack", "f", { arg msg;
-			attack = msg[1];
-		});
-		this.addCommand("sustain", "f", { arg msg;
-			sustain = msg[1];
-		});
-		this.addCommand("release", "f", { arg msg;
-			release = msg[1];
-		});
 
+		this.addCommand("dutycycle", "f", { arg msg;
+			synth.set(\dutycycle, msg[1]);
+		});
+		this.addCommand("loopenv", "f", { arg msg;
+			synth.set(\loopenv, msg[1]);
+		});
+		this.addCommand("envdecay", "f", { arg msg;
+			synth.set(\envdecay, msg[1]);
+		});
+		this.addCommand("vol", "f", { arg msg;
+			synth.set(\vol, msg[1]);
+		});
+		this.addCommand("sweep", "f", { arg msg;
+			synth.set(\sweeplen, msg[1]);
+		});
+		this.addCommand("sweeplen", "f", { arg msg;
+			synth.set(\sweeplen, msg[1]);
+		});
+		this.addCommand("sweepdir", "f", { arg msg;
+			synth.set(\sweepdir, msg[1]);
+		});
+		this.addCommand("sweepshi", "f", { arg msg;
+			synth.set(\sweepshi, msg[1]);
+		});
+//		this.addCommand("freq", "f", { arg msg;
+//			synth.set(\freq, msg[1]);
+//		});
+		this.addCommand("vbl", "i", { arg msg;
+			synth.set(\vbl, msg[1]);
+		});
+	}
+	// define a function that is called when the synth is shut down
+	free {
+		synth.free;
 	}
 }
