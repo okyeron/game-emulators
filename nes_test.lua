@@ -1,6 +1,24 @@
 -- NES2 engine test
 --
--- NES Square
+-- NES Square and Triangle
+
+ -- Square
+ -- dutycycle	Type (0-3).
+ -- loopenv		Loop envelope off or on (0/1).
+ -- envdecay	Envelope decay off or on (0/1).
+ -- vol			Volume (0-15).
+ -- sweep		Off or on (0/1).
+ -- sweeplen	Sweeplength (0-7).
+ -- sweepdir	Sweepdirection decrease or increase (0/1).
+ -- sweepshi	Sweepshift (0-7).
+ -- freqsq		Frequency (0-2047).
+ -- vblsq	 		Length counter (0-31).
+
+ -- Triangle
+ -- start     Linear counter start 0/1
+ -- counter		Linear counter 0-127
+ -- freqtri		Frequency (0-2047).
+ -- vbltri	 	Length counter (0-31).
 
 engine.name = "NES2"
 
