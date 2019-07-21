@@ -1,4 +1,4 @@
-// CroneEngine_NES2y
+// CroneEngine_NES2
 // NES2
 
 // Emulation of the sound generation hardware of the NES APU chip by Matthew Conte. 
@@ -22,71 +22,107 @@ freq		Frequency (0-2047).
 vbl	 		Length counter (0-31).
 */
 
-Engine_NES2y : CroneEngine {
+Engine_NES2 : CroneEngine {
 	// Nes2Square.ar(trig: 0, dutycycle: 0, loopenv: 0, envdecay: 0, vol: 10, sweep: 0, sweeplen: 0, sweepdir: 0, sweepshi: 0, freq: 100, vbl: 0)
-	
-	var <synth;
+	// Nes2Triangle.ar(trig: 0, start: 0, counter: 10, freq: 100, vbl: 0)
+	// Nes2Noise.ar(trig: 0, loopenv: 0, envdecay: 0, vol: 10, short: 0, freq: 10, vbl: 0)
+	// Nes2DMC.ar(trig: 0, loop: 0, freq: 1)
+		
+	var <synthSQ;
+	var <synthTRI;
+	var trig_a;
+	var trig_b;
+	var trig_c;
 		
 	*new { arg context, doneCallback;
 		^super.new(context, doneCallback);
 	}
 
 	alloc {
+		trig_a = Bus.control(context.server, 1);
+		trig_b = Bus.control(context.server, 1);
+		trig_c = Bus.control(context.server, 1);
+		
 		// Define the synth variable, whichis a function
-		synth = {
+		synthSQ = {
 			// define arguments to the function
-
-			arg out, gate=0, dutycycle=0, loopenv=0, envdecay=0, vol=10, sweep=0, sweeplen=0, sweepdir=0, sweepshi=0, freq=100, vbl=0, pan=0, amp=1 ;
+			arg out, dutycycle=0, loopenv=0, envdecay=0, vol=10, sweep=0, sweeplen=0, sweepdir=0, sweepshi=0, freqsq=100, vblsq=0, pan=0 ;
 			var z;
-			z = Nes2Square.ar(gate, dutycycle, loopenv, envdecay, vol, sweep, sweeplen, sweepdir, sweepshi, freq, vbl);
+			z = Nes2Square.ar(InTrig.kr(trig_a), dutycycle, loopenv, envdecay, vol, sweep, sweeplen, sweepdir, sweepshi, freqsq, vblsq);
 			Out.ar(out, Pan2.ar(z, pan));
-			
+		}.play(args: [\out, context.out_b], target: context.xg);
+
+		synthTRI = {
+			// define arguments to the function
+			arg out, start=0, counter=0, freqtri=100, vbltri=0, pan=0 ;
+			var z;
+			z = Nes2Triangle.ar(InTrig.kr(trig_b), start, counter, freqtri, vbltri);
+			Out.ar(out, Pan2.ar(z, pan));
 		}.play(args: [\out, context.out_b], target: context.xg);
 
 			
-		// noteOn(freq)
-		this.addCommand("noteOn", "f", { arg msg;
-			synth.set(\freq, msg[1], \gate, 1);
+		this.addCommand("bangSq", "", { arg msg;
+			trig_a.set(1);
 		});
-
-		this.addCommand("noteOff", "", { arg msg;
-			synth.set(\gate, 0);
+		this.addCommand("bangTri", "", { arg msg;
+			trig_b.set(1);
+		});
+		this.addCommand("bangNz", "", { arg msg;
+			trig_c.set(1);
+		});
+		this.addCommand("onOff", "f", { arg msg;
+			trig_a.set(msg[1]);
 		});
 
 
 		this.addCommand("dutycycle", "f", { arg msg;
-			synth.set(\dutycycle, msg[1]);
+			synthSQ.set(\dutycycle, msg[1]);
 		});
 		this.addCommand("loopenv", "f", { arg msg;
-			synth.set(\loopenv, msg[1]);
+			synthSQ.set(\loopenv, msg[1]);
 		});
 		this.addCommand("envdecay", "f", { arg msg;
-			synth.set(\envdecay, msg[1]);
+			synthSQ.set(\envdecay, msg[1]);
 		});
 		this.addCommand("vol", "f", { arg msg;
-			synth.set(\vol, msg[1]);
+			synthSQ.set(\vol, msg[1]);
 		});
 		this.addCommand("sweep", "f", { arg msg;
-			synth.set(\sweeplen, msg[1]);
+			synthSQ.set(\sweeplen, msg[1]);
 		});
 		this.addCommand("sweeplen", "f", { arg msg;
-			synth.set(\sweeplen, msg[1]);
+			synthSQ.set(\sweeplen, msg[1]);
 		});
 		this.addCommand("sweepdir", "f", { arg msg;
-			synth.set(\sweepdir, msg[1]);
+			synthSQ.set(\sweepdir, msg[1]);
 		});
 		this.addCommand("sweepshi", "f", { arg msg;
-			synth.set(\sweepshi, msg[1]);
+			synthSQ.set(\sweepshi, msg[1]);
 		});
-//		this.addCommand("freq", "f", { arg msg;
-//			synth.set(\freq, msg[1]);
-//		});
-		this.addCommand("vbl", "i", { arg msg;
-			synth.set(\vbl, msg[1]);
+		this.addCommand("freqsq", "f", { arg msg;
+			synthSQ.set(\freqsq, msg[1]);
 		});
+		this.addCommand("vblsq", "i", { arg msg;
+			synthSQ.set(\vblsq, msg[1]);
+		});
+
+		this.addCommand("start", "f", { arg msg;
+			synthTRI.set(\start, msg[1]);
+		});
+		this.addCommand("counter", "f", { arg msg;
+			synthTRI.set(\counter, msg[1]);
+		});
+		this.addCommand("freqtri", "f", { arg msg;
+			synthTRI.set(\freqtri, msg[1]);
+		});
+		this.addCommand("vbltri", "i", { arg msg;
+			synthTRI.set(\vbltri, msg[1]);
+		});
+
 	}
 	// define a function that is called when the synth is shut down
 	free {
-		synth.free;
+		synthSQ.free;
+		synthTRI.free;
 	}
 }

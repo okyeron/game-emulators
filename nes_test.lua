@@ -1,77 +1,77 @@
 -- NES2 engine test
 --
--- NES Square only implemented so far
+-- NES Square
 
--- trig		Control or audio rate trigger.
--- dutycycle	Type (0-3).
--- loopenv		Loop envelope off or on (0/1).
--- envdecay	Envelope decay off or on (0/1).
--- vol			Volume (0-15).
--- sweep		Off or on (0/1).
--- sweeplen	Sweeplength (0-7).
--- sweepdir	Sweepdirection decrease or increase (0/1).
--- sweepshi	Sweepshift (0-7).
--- freq		Frequency (0-2047).
--- vbl	 		Length counter (0-31).
+engine.name = "NES2"
 
-
-engine.name = "NES"
-
-local freq = math.random(1,1023)
-local vbl = 10
+local freqsq = 600 --math.random(1,1023)
+local freqtri = 300
+local vblsq = 6
+local vbltri = 6
 
 function init()
   engine.dutycycle(0)
   engine.loopenv(0)
-  engine.envdecay(0)
-  engine.vol(10)
-  engine.sweep(1)
+  engine.envdecay(1)
+  engine.vol(8)
+  engine.sweep(0)
   engine.sweeplen(7)
-  engine.sweepdir(0)
+  engine.sweepdir(1)
   engine.sweepshi(7)
-  engine.freq(freq)
-  engine.vbl(vbl)
-  
+  engine.freqsq(freqsq)
+  engine.vblsq(vblsq)
+  engine.onOff(0)
+
+
+  engine.start(0) -- 0/1
+  engine.counter(20) -- 1-127
+  engine.freqtri(freqtri)
+  engine.vbltri(vbltri)
+
   counter = metro.init()
-  counter.time = 1 -- interval
+  counter.time = 1/8 -- interval
   counter.event = trigger
   --counter:start()
-  --  redraw()
+  --redraw()
 end
 
 function trigger()
-  --freq = freq + 10
-  --engine.vbl(vbl)
-  --engine.noteOn (freq)
-  --engine.noteOff()
-  print(freq)
+    --engine.vblsq(vblsq)
+    --freqsq = math.random(100, 2047)
+    --engine.freqsq (freqsq)
+    --engine.bangSq()
   redraw()
 end
 
 function key(n,z)
   if n == 2 and z == 1 then
     --counter:start()
-    --freq = math.random(1,1023)
-    engine.vbl(vbl)
-    engine.noteOn (freq)
+    --freqsq = math.random(1,1023)
+    engine.vblsq(vblsq)
+    engine.freqsq (freqsq)
+    engine.bangSq()
+
+    engine.vbltri(vbltri)
+    engine.freqtri (freqtri)
+    engine.bangTri()
     
   elseif n == 2 and z==0 then
-    engine.noteOff ()
+    --engine.noteOff ()
 
   elseif n == 3 and z==1 then
-    --counter:stop()
+    counter:stop()
   elseif n == 3 and z==0 then
-    --position = 0
+
   end
   redraw()
 end
 
 function enc(n,d)
   if n == 2 then
-    freq = freq + d
+    freqsq = freqsq + d
     
   elseif n == 3 then
-    vbl = vbl + d
+    vblsq = vblsq + d
   
   end
   redraw()
@@ -87,9 +87,9 @@ function redraw()
   screen.text( "NES2" )
   screen.move(30,8)
   screen.move(30,18)
-  screen.text( "freq: " .. freq )
+  screen.text( "freqsq: " .. freqsq )
   screen.move(30,28)
-  screen.text( "vbl: " .. vbl )
+  screen.text( "vblsq: " .. vblsq )
 
   screen.update()
 end
