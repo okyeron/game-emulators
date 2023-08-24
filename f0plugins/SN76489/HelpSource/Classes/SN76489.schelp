@@ -61,6 +61,7 @@ code::
 s.boot;
 {SN76489.ar}.play
 
+
 {SN76489.ar(1000, 1003, 1006, 0, 12, 12, 12)}.play					//3 voices at low freq
 {SN76489.ar(0, 0, 0, MouseX.kr(0, 7).round, 0, 0, 0, 15)}.play		//just the noise voice
 {SN76489.ar(100, 200, 300, 7, 15, 15, 15, 15, MouseX.kr(0, 2))}.play	//all 4 voices + rate

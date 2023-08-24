@@ -1,0 +1,37 @@
+SN76489
+
+each voice should be controlled by its volume
+
+since this chip never had envelopes vol 0 would be gate off, vol 15 gate on.
+
+to pseudo create an envelope you would ramp up and or down the volume
+
+this way frequency can be changed independantly of the volume
+
+I think the sega's have a vibrato function that can applied to each voice but that must be part of the sega and not the chip itself, not sure how to emulate this, perhaps have to just make an lfo in the script to modulate frequency.
+
+I know you can do lfo's in supercollider but not sure in norns lua
+
+Im not sure of a math way to convert the 10 bit value into notes, on a c64 their is a math equation and also frequency tables are available, the sn76489 is more obscure, worse case manually have to make frequency arrays
+
+the noise looks correct though I have not tested
+
+-- noise 0,1,2,3 are set tones, 4,5,6 are noise from high to low
+-- noise 3 (periodic) and 7 (white noise) can be pitched with tone2
+-- (set vol2 to zero in this situation)
+
+-- noise chart
+-- 0 Periodic noise, shift rate = clock speed (Hz) / 512
+-- 1 Periodic noise, shift rate = clock speed (Hz) / 1024
+-- 2 Periodic noise, shift rate = clock speed (Hz) / 2048
+-- 3 Perioic noise, shift rate =  tone2 frequency
+-- 4 White noise, shift rate = clock speed (Hz) / 512
+-- 5 White noise, shift rate = clock speed (Hz) / 1024
+-- 6 White noise, shift rate = clock speed (Hz) / 2048
+-- 7 White noise, shift rate = tone2 frequency
+
+then the for example if norns script that took midi on channel 1 , 2, 3, 4 
+
+you could sequence it multitimbrally
+
+

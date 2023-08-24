@@ -1,5 +1,6 @@
 // CroneEngine_Atari2600
 // Atari2600
+// Revised August 2023 - steven noreyko
 
 // two independent voices, each of which has a 4 bit volume control (16 values), 
 // 5 bit pitch (32 values), and a 4 bit control register which selects the type of sound
@@ -38,17 +39,19 @@
 
 Engine_Atari2600 : CroneEngine {
 	var pg;
-    var amp=0.2;
-    var attack=0.1;
-    var sustain=0.5;
-    var release=0.5;
-    var tone0=5;	// see tone codes above
-    var tone1=8;	// see tone codes above
-  	var freq0=10;
-    var freq1=20;
-    var vol0=15;
-    var vol1=15;
-
+    var amp = 0.8;
+    var tone0 = 1;	// see tone codes above
+    var tone1 = 5;	// see tone codes above
+  	var freq0 = 10;
+    var freq1 = 20;
+    var vol0 = 0;
+    var vol1 = 0;
+    var pan = 0;
+	var rate= 1;
+	
+	// Synth instance
+	var atari2600;
+	
 	*new { arg context, doneCallback;
 		^super.new(context, doneCallback);
 	}
@@ -57,50 +60,72 @@ Engine_Atari2600 : CroneEngine {
 		pg = ParGroup.tail(context.xg);
 
 		SynthDef("Atari2600", {
-			arg out, tone0=tone0, tone1=tone1, freq0=freq0, freq1=freq1, amp=amp, attack=attack, sustain=sustain, release=release, pan=1 ;
+			arg out, tone0=tone0, tone1=tone1, freq0=freq0, freq1=freq1, vol0=vol0, vol1=vol1, rate=rate, amp=amp, pan=pan ;
 			var e, z;
 			//e = Env.perc(level: amp, releaseTime: release).kr(2);
-			e = Env.linen(attackTime: attack, sustainTime: sustain, releaseTime: release, level: amp).kr(2);
+			//e = Env.linen(attackTime: attack, sustainTime: sustain, releaseTime: release, level: amp).kr(2);
 			//e = EnvGen.kr(Env.asr(attack, sustain, release), gate, doneAction:2);
-			z = Atari2600.ar(tone0, tone1, freq0, freq1, vol0, vol1);
-			Out.ar(out, Pan2.ar(z*e, pan));
+			// Atari2600.ar(audc0: 1, audc1: 2, audf0: 3, audf1: 4, audv0: 5, audv1: 5, rate: 1)
+			z = Atari2600.ar(tone0, tone1, freq0, freq1, vol0, vol1, rate);
+			Out.ar(out, Pan2.ar(z*amp, pan));
 		}).add;
 
+		// https://llllllll.co/t/supercollider-engine-failure-in-server-error/53051
+		Server.default.sync;
 
-		this.addCommand("trig", "", {
-        	Synth("Atari2600", [\out, context.out_b, \freq0,freq0,\freq1,freq1,\tone0,tone0,\tone1,tone1,\vol0,vol0,\vol1,vol1,\amp,amp,\release,release,\attack,attack,\sustain,sustain], target:pg);
-		});
+		atari2600 = Synth("Atari2600", target:pg);
+		atari2600.set(
+			\tone0, tone0,
+			\tone1, tone1,
+			\freq0, freq0,
+			\freq1, freq1,
+			\vol0, vol0,
+			\vol1, vol1,
+			\amp, amp,
+			\pan, pan,
+			\rate, rate
+		);
 
 		this.addCommand("freq0", "f", { arg msg;
 			freq0 = msg[1];
+			atari2600.set(\freq0, freq0);
 		});
 		this.addCommand("freq1", "f", { arg msg;
 			freq1 = msg[1];
+			atari2600.set(\freq1, freq1);
 		});
 		this.addCommand("tone0", "f", { arg msg;
 			tone0 = msg[1];
+			atari2600.set(\tone0, tone0);
 		});
 		this.addCommand("tone1", "f", { arg msg;
 			tone1 = msg[1];
+			atari2600.set(\tone1, tone1);
 		});
 		this.addCommand("vol0", "f", { arg msg;
 			vol0 = msg[1];
+			atari2600.set(\vol0, vol0);
 		});
 		this.addCommand("vol1", "f", { arg msg;
 			vol1 = msg[1];
-		});
-		this.addCommand("amp", "f", { arg msg;
-			amp = msg[1];
-		});
-		this.addCommand("attack", "f", { arg msg;
-			attack = msg[1];
-		});
-		this.addCommand("sustain", "f", { arg msg;
-			sustain = msg[1];
-		});
-		this.addCommand("release", "f", { arg msg;
-			release = msg[1];
+			atari2600.set(\vol1, vol1);
 		});
 
+		this.addCommand("amp", "f", { arg msg;
+			amp = msg[1];
+			atari2600.set(\amp, amp);
+		});
+		this.addCommand("pan", "f", { arg msg;
+			pan = msg[1];
+			atari2600.set(\pan, pan);
+		});
+		this.addCommand("rate", "f", { arg msg;
+			rate = msg[1];
+			atari2600.set(\rate, rate);
+		});
+
+	}
+	free {
+		atari2600.free;
 	}
 }
